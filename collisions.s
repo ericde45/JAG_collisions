@@ -21,7 +21,7 @@ ob_list_courante			equ		((ENDRAM-$4000)+$2000)				; address of read list
 nb_octets_par_ligne			equ		320
 nb_lignes					equ		200
 
-
+CLS		equ		1
 
 
 .opt "~Oall"
@@ -131,7 +131,7 @@ boucle_pixels_fond:
 	cmp.l	a1,a0
 	blt.s	boucle_pixels_fond
 
-	.if		1=1
+	.if		CLS=1
 ; effacer le fond au blitter
 	move.l	#zone_fond,A1_BASE			; = DEST
 	move.l	#0,A1_PIXEL
@@ -141,13 +141,13 @@ boucle_pixels_fond:
 	move.l	#fin_zone_fond-zone_fond,d1
 	move.w	d1,d0
 	move.l	d0,B_COUNT
-	move.l	#LFU_ZERO|BUSHI,B_CMD
+	move.l	#LFU_ZERO,B_CMD
 	.endif
 
 ; blitter le sprite
 ; fond AND mask
 	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*40)+32,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
 	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
 	move.l	#320,A1_CLIP
 	move.w   #1,d0
@@ -173,7 +173,7 @@ wait_blitter1:
 	
 ; fond OR sprite	
 	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*40)+32,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
 	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
 	move.l	#320,A1_CLIP
 	move.w   #1,d0
@@ -193,55 +193,12 @@ wait_blitter1:
 	move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1,B_CMD
 
 
-; test de sprites en 1 passe:
-;B_CMD :
-;- SRCEN => activation de la lecture data source
-;- DSTEN => activation de la lecture data destination
-;- LFU_REPLACE => écrire SOURCE
-;- DCOMPEN => activation du test "if B_PATD = source"
-
-;B_PATD
-;- initialisé avec la valeur "0x0000 0000 0000 0000" (64-bit)
-
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*80)+49,A1_PIXEL		; X dest=32 / Y dest=40
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	move.l	#320,A1_CLIP
-	move.w   #1,d0
-	swap     d0
-	move.w   #-16,d0
-	move.l   d0,A1_STEP 
-	move.l	#0,A1_FSTEP
-	
-	move.l	#sprite_fond,A2_BASE			; = source
-	move.l	#0,A2_PIXEL
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-
-	move.l	#$00,B_PATD
-
-	move.w	#16,d0			; 16 lignes
-	swap	d0
-	move.w	#16,d0			; 16 pixels de largeur
-	move.l	d0,B_COUNT
-	move.l	#SRCEN|DSTEN|LFU_REPLACE|UPDA1|DCOMPEN,B_CMD
-
-
-
-
-
-
-
-
-
-
-
-
 
 ; or de sprite rond double triangle
 ; 48 = no collision
 ; 47 = collision
 	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*55)+17+8,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
 	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
 	move.l	#320,A1_CLIP
 	move.w   #1,d0
@@ -264,7 +221,7 @@ wait_blitter1:
 
 ; avec test de collision
 	;move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*55)+17+8,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
 	;move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
 	;move.l	#320,A1_CLIP
 	;move.w   #1,d0
@@ -286,7 +243,7 @@ wait_blitter1:
 
 	
 	move.l	#%100,B_STOP
-	move.l	#CMPDST|DCOMPEN|DSTEN|B_DSTD|UPDA1,B_CMD
+	move.l	#CMPDST|DCOMPEN|DSTEN|LFU_D|UPDA1,B_CMD
 	
 
 	move.l	A1_PIXEL_R,d3				; D1 = pos du stop
@@ -299,8 +256,8 @@ wait_blitter1:
 	btst	#1,d0
 	beq.s	pas_de_collision
 	move.w	#$7700,BG
-	;move.l	#%010,B_STOP
-	;nop
+	move.l	#%010,B_STOP			; abort
+	nop
 
 pas_de_collision:
 
@@ -310,6 +267,105 @@ pas_de_collision:
 ; =$000F0002 pour objet 1 pixel commun, positioné a gauche
 ; au dessus : collision uniquement en bas a droite 1 pixel : 0806
 ; en dessous : 
+
+; -----------------------------------------------------------------------------------
+; test de sprites en 1 passe:
+;B_CMD :
+;- SRCEN => activation de la lecture data source
+;- DSTEN => activation de la lecture data destination
+;- LFU_REPLACE => écrire SOURCE
+;- DCOMPEN => activation du test "if B_PATD = source"
+
+;B_PATD
+;- initialisé avec la valeur "0x0000 0000 0000 0000" (64-bit)
+
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(40<<16)+100,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	move.l	#320,A1_CLIP
+	move.w   #1,d0
+	swap     d0
+	move.w   #-16,d0
+	move.l   d0,A1_STEP 
+	move.l	#0,A1_FSTEP
+	
+	move.l	#sprite_fond,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	move.l	#$00,B_PATD
+
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+	move.l	#SRCEN|DSTEN|LFU_REPLACE|UPDA1|DCOMPEN,B_CMD
+
+
+
+	.if		1=0
+
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(320*40)+100+15,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	move.l	#320,A1_CLIP
+	move.w   #1,d0
+	swap     d0
+	move.w   #-16,d0
+	move.l   d0,A1_STEP 
+	move.l	#0,A1_FSTEP
+	
+	move.l	#sprite_rond,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	move.l	#$00,B_PATD
+
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+	move.l	#SRCEN|DSTEN|LFU_REPLACE|UPDA1|DCOMPEN,B_CMD
+	.endif
+
+
+; deuxieme test de collision, en 1 passe
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(38<<16)+100-15,A1_PIXEL		; X dest=32 / Y dest=40
+
+	move.l	#sprite_rond,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+
+
+	move.l	#$01010101,B_PATD
+	move.l	#%100,B_STOP
+	move.l	#SRCEN|DSTEN|CMPDST|DCOMPEN|LFU_SORD|UPDA1,B_CMD				; affiche les parties qui ne sont pas en collision
+	
+	;move.l	#SRCEN|DSTEN|CMPDST|DCOMPEN|LFU_D|UPDA1,B_CMD					; n'affiche rien
+
+
+; recupere le status
+	move.l	B_CMD,d0
+	and.l	#%11,d0			; bit0 : 1=idle, bit1 : 1=stopped
+
+	btst	#1,d0
+	beq.s	pas_de_collision2
+	move.w	#$7000,BG
+	move.l	#%010,B_STOP
+	nop
+
+pas_de_collision2:
+
+
+
+	move.l	A1_PIXEL_R,d1				; D1 = pos du stop
+	move.l	A2_PIXEL_R,d2				; D1 = pos du stop
 
 
 main:
