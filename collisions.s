@@ -144,129 +144,7 @@ boucle_pixels_fond:
 	move.l	#LFU_ZERO,B_CMD
 	.endif
 
-; blitter le sprite
-; fond AND mask
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	move.l	#320,A1_CLIP
-	move.w   #1,d0
-	swap     d0
-	move.w   #-16,d0
-	move.l   d0,A1_STEP 
-	move.l	#0,A1_FSTEP
-	
-	move.l	#sprite_fond_mask,A2_BASE			; = source
-	move.l	#0,A2_PIXEL
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-		
-	move.w	#16,d0			; 16 lignes
-	swap	d0
-	move.w	#16,d0			; 16 pixels de largeur
-	move.l	d0,B_COUNT
-	move.l	#SRCEN|DSTEN|LFU_SAD|UPDA1,B_CMD
 
-wait_blitter1:
-	move.l   B_CMD,d0             ;; wait for blitter to finish
-	ror.w    #1,d0                ;; Check if blitter is idle
-	bcc.b    wait_blitter1                ;; bit was clear -> busy
-	
-; fond OR sprite	
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	move.l	#320,A1_CLIP
-	move.w   #1,d0
-	swap     d0
-	move.w   #-16,d0
-	move.l   d0,A1_STEP 
-	move.l	#0,A1_FSTEP
-	
-	move.l	#sprite_fond,A2_BASE			; = source
-	move.l	#0,A2_PIXEL
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-
-	move.w	#16,d0			; 16 lignes
-	swap	d0
-	move.w	#16,d0			; 16 pixels de largeur
-	move.l	d0,B_COUNT
-	move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1,B_CMD
-
-
-
-; or de sprite rond double triangle
-; 48 = no collision
-; 47 = collision
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	move.l	#320,A1_CLIP
-	move.w   #1,d0
-	swap     d0
-	move.w   #-16,d0
-	move.l   d0,A1_STEP 
-	move.l	#0,A1_FSTEP
-	
-	move.l	#sprite_rond,A2_BASE			; = source
-	move.l	#0,A2_PIXEL
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-
-	move.w	#16,d0			; 16 lignes
-	swap	d0
-	move.w	#16,d0			; 16 pixels de largeur
-	move.l	d0,B_COUNT
-	move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1,B_CMD
-	
-	
-
-; avec test de collision
-	;move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
-	;move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	;move.l	#320,A1_CLIP
-	;move.w   #1,d0
-	;swap     d0
-	;move.w   #-16,d0
-	;move.l   d0,A1_STEP 
-	;move.l	#0,A1_FSTEP
-	
-	;move.l	#sprite_rond,A2_BASE			; = source
-	;move.l	#0,A2_PIXEL
-	;move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-
-	;move.w	#16,d0			; 16 lignes
-	;swap	d0
-	;move.w	#16,d0			; 16 pixels de largeur
-	;move.l	d0,B_COUNT
-	
-	move.l	#$09090909,B_PATD
-
-	
-	move.l	#%100,B_STOP
-	move.l	#CMPDST|DCOMPEN|DSTEN|LFU_D|UPDA1,B_CMD
-	
-
-	move.l	A1_PIXEL_R,d3				; D1 = pos du stop
-	move.l	A2_PIXEL_R,d4				; D1 = pos du stop
-
-; recupere le status
-	move.l	B_CMD,d0
-	and.l	#%11,d0			; bit0 : 1=idle, bit1 : 1=stopped
-
-	btst	#1,d0
-	beq.s	pas_de_collision
-	move.w	#$7700,BG
-	move.l	#%010,B_STOP			; abort
-	nop
-
-pas_de_collision:
-
-	move.l	A1_PIXEL_R,d1				; D1 = pos du stop
-	move.l	A2_PIXEL_R,d2				; D1 = pos du stop
-; =6 pour objet a droite, 1 pixel de chevauchement
-; =$000F0002 pour objet 1 pixel commun, positioné a gauche
-; au dessus : collision uniquement en bas a droite 1 pixel : 0806
-; en dessous : 
 
 ; -----------------------------------------------------------------------------------
 ; test de sprites en 1 passe:
@@ -289,7 +167,7 @@ pas_de_collision:
 	move.l   d0,A1_STEP 
 	move.l	#0,A1_FSTEP
 	
-	move.l	#sprite_fond,A2_BASE			; = source
+	move.l	#sprite_fond,A2_BASE			; = source  =$08
 	move.l	#0,A2_PIXEL
 	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
 
@@ -303,37 +181,25 @@ pas_de_collision:
 
 
 
-	.if		1=0
 
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(320*40)+100+15,A1_PIXEL		; X dest=32 / Y dest=40
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
-	move.l	#320,A1_CLIP
-	move.w   #1,d0
-	swap     d0
-	move.w   #-16,d0
-	move.l   d0,A1_STEP 
-	move.l	#0,A1_FSTEP
-	
-	move.l	#sprite_rond,A2_BASE			; = source
-	move.l	#0,A2_PIXEL
-	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
-
-	move.l	#$00,B_PATD
-
-	move.w	#16,d0			; 16 lignes
-	swap	d0
-	move.w	#16,d0			; 16 pixels de largeur
-	move.l	d0,B_COUNT
-	move.l	#SRCEN|DSTEN|LFU_REPLACE|UPDA1|DCOMPEN,B_CMD
-	.endif
-
-
+; -----------------------------------------------------------------------------------
 ; deuxieme test de collision, en 1 passe
-	move.l	#zone_fond,A1_BASE			; = DEST
-	move.l	#(38<<16)+100-15,A1_PIXEL		; X dest=32 / Y dest=40
+; fond deja blitté = destination = $08
+; sprite source = $01
 
-	move.l	#sprite_rond,A2_BASE			; = source
+
+
+	;;move.l	#zone_fond,A1_BASE			; = DEST
+
+; collision:
+	;move.l	#(45<<16)+100+5,A1_PIXEL		; X dest=32 / Y dest=40
+	
+; pas de collision, les 4 pixels sont entre les 2 colonnes
+	move.l	#(45<<16)+100,A1_PIXEL		; X dest=32 / Y dest=40
+
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+
+	move.l	#sprite_point,A2_BASE			; = source =$01
 	move.l	#0,A2_PIXEL
 	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
 
@@ -343,11 +209,28 @@ pas_de_collision:
 	move.l	d0,B_COUNT
 
 
-	move.l	#$01010101,B_PATD
+	;move.l	#$09090909,B_PATD			; KO
+	;move.l	#$09,B_PATD					; KO pas de collision meme si collision
+	;move.l	#$08,B_PATD					; 
+
+	move.l	#$08080808,B_PATD+4			; KO : chercher 08 => collisions, meme quand pas de collisions
+	move.l	#$08080808,B_PATD			; KO : chercher 08 => collisions, meme quand pas de collisions
+
+	;move.l	#$09090909,B_PATD+4			; KO : ne trouve jamais de collisions
+	;move.l	#$09090909,B_PATD			; KO : ne trouve jamais de collisions
+
+	;move.l	#$01010101,B_PATD+4			; ne trouve jamais de collisions
+	;move.l	#$01010101,B_PATD			; ne trouve jamais de collisions
+
+	;move.l	#$01,B_PATD			; KO
+	
 	move.l	#%100,B_STOP
 	move.l	#SRCEN|DSTEN|CMPDST|DCOMPEN|LFU_SORD|UPDA1,B_CMD				; affiche les parties qui ne sont pas en collision
-	
 	;move.l	#SRCEN|DSTEN|CMPDST|DCOMPEN|LFU_D|UPDA1,B_CMD					; n'affiche rien
+	;move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1|UPDA2,B_CMD							; pas de test de collision, fais un OR
+	
+	
+	;move.l	#SRCEN|DSTEN|CMPDST|LFU_D|UPDA1,B_CMD					; n'affiche rien
 
 
 ; recupere le status
@@ -361,7 +244,6 @@ pas_de_collision:
 	nop
 
 pas_de_collision2:
-
 
 
 	move.l	A1_PIXEL_R,d1				; D1 = pos du stop
@@ -656,11 +538,11 @@ sprite_fond:
 ; 16x16 256 couleurs
 	.rept	16
 	.rept	6
-	dc.b	1
+	dc.b	8
 	.endr
 	dc.b	0,0,0,0
 	.rept	6
-	dc.b	1
+	dc.b	8
 	.endr
 	.endr
 	
@@ -679,22 +561,36 @@ sprite_fond_mask:
 	.endr
 
 sprite_rond:
-	dc.b			0,0,0,0,0,0,0,8,8,0,0,0,0,0,0,0
-	dc.b			0,0,0,0,0,0,8,8,8,8,0,0,0,0,0,0
-	dc.b			0,0,0,0,0,8,8,8,8,8,8,0,0,0,0,0
-	dc.b			0,0,0,0,8,8,8,8,8,8,8,8,0,0,0,0
-	dc.b			0,0,0,8,8,8,8,8,8,8,8,8,8,0,0,0
-	dc.b			0,0,8,8,8,8,8,8,8,8,8,8,8,8,0,0
-	dc.b			0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,0
-	dc.b			8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
-	dc.b			0,0,0,0,0,0,0,8,8,0,0,0,0,0,0,0
-	dc.b			0,0,0,0,0,0,8,8,8,8,0,0,0,0,0,0
-	dc.b			0,0,0,0,0,8,8,8,8,8,8,0,0,0,0,0
-	dc.b			0,0,0,0,8,8,8,8,8,8,8,8,0,0,0,0
-	dc.b			0,0,0,8,8,8,8,8,8,8,8,8,8,0,0,0
-	dc.b			0,0,8,8,8,8,8,8,8,8,8,8,8,8,0,0
-	dc.b			0,8,8,8,8,8,8,8,8,8,8,8,8,8,8,0
-	dc.b			8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8
+	dc.b			0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0
+	dc.b			0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0
+	dc.b			0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0
+	dc.b			0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0
+	dc.b			0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0
+	dc.b			0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0
+	dc.b			0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
+	dc.b			1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+	dc.b			0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0
+	dc.b			0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0
+	dc.b			0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0
+	dc.b			0,0,0,0,1,1,1,1,1,1,1,1,0,0,0,0
+	dc.b			0,0,0,1,1,1,1,1,1,1,1,1,1,0,0,0
+	dc.b			0,0,1,1,1,1,1,1,1,1,1,1,1,1,0,0
+	dc.b			0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0
+	dc.b			1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+
+sprite_point:
+	.rept	7
+	.rept	16
+	dc.b	0
+	.endr
+	.endr
+	dc.b			0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0
+	dc.b			0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0
+	.rept	7
+	.rept	16
+	dc.b	0
+	.endr
+	.endr
 	
 
 
@@ -721,3 +617,133 @@ zone_fond:			ds.b		320*200
 fin_zone_fond:
 
 FIN_RAM:
+
+.if		1=0
+
+; blitter le sprite
+; fond AND mask
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	move.l	#320,A1_CLIP
+	move.w   #1,d0
+	swap     d0
+	move.w   #-16,d0
+	move.l   d0,A1_STEP 
+	move.l	#0,A1_FSTEP
+	
+	move.l	#sprite_fond_mask,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+		
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+	move.l	#SRCEN|DSTEN|LFU_SAD|UPDA1,B_CMD
+
+wait_blitter1:
+	move.l   B_CMD,d0             ;; wait for blitter to finish
+	ror.w    #1,d0                ;; Check if blitter is idle
+	bcc.b    wait_blitter1                ;; bit was clear -> busy
+	
+; fond OR sprite	
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(0<<16)+0,A1_PIXEL		; X dest=32 / Y dest=40
+	;move.l	#(40<<16)+32,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	move.l	#320,A1_CLIP
+	move.w   #1,d0
+	swap     d0
+	move.w   #-16,d0
+	move.l   d0,A1_STEP 
+	move.l	#0,A1_FSTEP
+	
+	move.l	#sprite_fond,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+	move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1,B_CMD
+
+; or de sprite rond double triangle
+; 48 = no collision
+; 47 = collision
+	move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(0<<16)+0+15,A1_PIXEL		; X dest=32 / Y dest=40
+	;move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	move.l	#320,A1_CLIP
+	move.w   #1,d0
+	swap     d0
+	move.w   #-16,d0
+	move.l   d0,A1_STEP 
+	move.l	#0,A1_FSTEP
+	
+	move.l	#sprite_rond,A2_BASE			; = source
+	move.l	#0,A2_PIXEL
+	move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	move.w	#16,d0			; 16 lignes
+	swap	d0
+	move.w	#16,d0			; 16 pixels de largeur
+	move.l	d0,B_COUNT
+	move.l	#SRCEN|DSTEN|LFU_SORD|UPDA1,B_CMD
+	
+	
+
+; avec test de collision
+	;move.l	#zone_fond,A1_BASE			; = DEST
+	move.l	#(40<<16)+32+15,A1_PIXEL		; X dest=32 / Y dest=40
+	;move.l	#PIXEL8|XADDPIX|PITCH1|WID320,A1_FLAGS
+	;move.l	#320,A1_CLIP
+	;move.w   #1,d0
+	;swap     d0
+	;move.w   #-16,d0
+	;move.l   d0,A1_STEP 
+	;move.l	#0,A1_FSTEP
+	
+	;move.l	#sprite_rond,A2_BASE			; = source
+	;move.l	#0,A2_PIXEL
+	;move.l	#PIXEL8|XADDPIX|PITCH1|WID16,A2_FLAGS
+
+	;move.w	#16,d0			; 16 lignes
+	;swap	d0
+	;move.w	#16,d0			; 16 pixels de largeur
+	;move.l	d0,B_COUNT
+	
+	move.l	#$09090909,B_PATD
+
+	
+	move.l	#%100,B_STOP
+	move.l	#CMPDST|DCOMPEN|DSTEN|LFU_D|UPDA1,B_CMD
+	
+
+	move.l	A1_PIXEL_R,d3				; D1 = pos du stop
+	move.l	A2_PIXEL_R,d4				; D1 = pos du stop
+
+; recupere le status
+	move.l	B_CMD,d0
+	and.l	#%11,d0			; bit0 : 1=idle, bit1 : 1=stopped
+
+	btst	#1,d0
+	beq.s	pas_de_collision
+	move.w	#$7700,BG				; 7700=violet
+	move.l	#%010,B_STOP			; abort
+	nop
+
+pas_de_collision:
+
+	move.l	A1_PIXEL_R,d1				; D1 = pos du stop
+	move.l	A2_PIXEL_R,d2				; D1 = pos du stop
+	
+	
+	
+; =6 pour objet a droite, 1 pixel de chevauchement
+; =$000F0002 pour objet 1 pixel commun, positioné a gauche
+; au dessus : collision uniquement en bas a droite 1 pixel : 0806
+; en dessous : 
+.endif
